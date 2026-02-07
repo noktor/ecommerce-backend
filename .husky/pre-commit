@@ -1,0 +1,3 @@
+# Pre-commit hook
+# Add any pre-commit checks here (e.g., linting, type checking)
+# Example: pnpm run check

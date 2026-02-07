@@ -454,14 +454,70 @@ Gets a product by ID:
 ### Compile TypeScript
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 ### Verify types
 
 ```bash
-npm run check
+pnpm run check
 ```
+
+### Commit Workflow
+
+This project uses **Conventional Commits** to maintain a clean and consistent commit history. We use [Commitizen](https://github.com/commitizen/cz-cli), [Husky](https://typicode.github.io/husky/), and [Commitlint](https://commitlint.js.org/) to enforce commit message standards.
+
+#### Using Commitizen (Recommended)
+
+Instead of using `git commit`, use the interactive Commitizen CLI:
+
+```bash
+pnpm commit
+```
+
+This will guide you through creating a properly formatted commit message.
+
+#### Commit Message Format
+
+All commit messages must follow the [Conventional Commits](https://www.conventionalcommits.org/) specification:
+
+```
+<type>(<scope>): <subject>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+#### Commit Types
+
+- `feat:` - A new feature
+- `fix:` - A bug fix
+- `docs:` - Documentation only changes
+- `style:` - Changes that do not affect the meaning of the code (white-space, formatting, etc.)
+- `refactor:` - A code change that neither fixes a bug nor adds a feature
+- `perf:` - A code change that improves performance
+- `test:` - Adding missing tests or correcting existing tests
+- `chore:` - Changes to the build process or auxiliary tools and libraries
+- `ci:` - Changes to CI configuration files and scripts
+- `build:` - Changes that affect the build system or external dependencies
+- `revert:` - Reverts a previous commit
+
+#### Examples
+
+```bash
+feat(auth): add email verification flow
+fix(cart): resolve issue with empty cart on refresh
+docs(readme): update installation instructions
+refactor(orders): simplify order creation logic
+chore(deps): update dependencies to latest versions
+```
+
+#### Manual Commits
+
+If you write commit messages manually, they will be automatically validated by Commitlint. Invalid commit messages will be rejected.
+
+**Note**: The commit-msg hook validates all commits, so make sure your commit messages follow the conventional commit format.
 
 ## 📝 Notes
 
