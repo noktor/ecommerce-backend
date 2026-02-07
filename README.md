@@ -1,0 +1,440 @@
+# 🛒 E-commerce Backend - Hexagonal Architecture
+
+E-commerce backend implemented with **Hexagonal Architecture** (Ports & Adapters), including retry system with RabbitMQ and cache with Redis.
+
+## 📋 Features
+
+- ✅ **Hexagonal Architecture** - Clear separation between domain, application and infrastructure
+- ✅ **Retry System** - RabbitMQ with automatic retry and dead letter queue
+- ✅ **Cache** - Redis to improve performance (with in-memory fallback)
+- ✅ **TypeScript** - Static typing for better security
+- ✅ **Use Cases** - CreateOrder, AddToCart, GetProducts, GetProductById
+
+## 🏗️ Project Structure
+
+```
+src/
+├── domain/                    # Domain Layer (Business Core)
+│   ├── Product.ts            # Product Entity
+│   ├── Customer.ts           # Customer Entity
+│   ├── Order.ts              # Order Entity
+│   ├── Cart.ts               # Cart Entity
+│   ├── repositories/         # Interfaces (Ports)
+│   │   ├── ProductRepository.ts
+│   │   ├── CustomerRepository.ts
+│   │   ├── OrderRepository.ts
+│   │   └── CartRepository.ts
+│   ├── events/               # Event Interfaces
+│   │   └── EventPublisher.ts
+│   └── services/             # Service Interfaces
+│       └── CacheService.ts
+│
+├── application/              # Application Layer (Use Cases)
+│   └── use-cases/
+│       ├── CreateOrderUseCase.ts
+│       ├── AddToCartUseCase.ts
+│       ├── GetProductsUseCase.ts
+│       └── GetProductByIdUseCase.ts
+│
+└── infrastructure/           # Infrastructure Layer (Adapters)
+    ├── repositories/         # MongoDB implementations
+    │   ├── MongoProductRepository.ts
+    │   ├── MongoCustomerRepository.ts
+    │   ├── MongoOrderRepository.ts
+    │   └── MongoCartRepository.ts
+    ├── events/               # RabbitMQ Implementation
+    │   └── RabbitMQEventPublisher.ts
+    └── cache/                # Redis Implementation
+        └── RedisCacheService.ts
+```
+
+## 🚀 Installation
+
+### Prerequisites
+
+- Node.js >= 18
+- (Optional) RabbitMQ - For retry system
+- (Optional) Redis - For cache
+- MongoDB Atlas account - For database
+
+### Step 1: Install dependencies
+
+```bash
+npm install
+```
+
+### Step 2: Install Redis (Windows)
+
+There are several options to install Redis on Windows:
+
+#### Option A: Docker Compose (Recommended - Fully containerized) 🐳
+
+This option runs **both Redis and the application** inside Docker containers.
+
+1. **Start Docker Desktop**:
+   - Open Docker Desktop from the start menu
+   - Wait for the Docker icon to appear in the taskbar
+
+2. **Run everything with Docker Compose**:
+
+   **Option 1: Using the script (Easier)**:
+   ```powershell
+   .\docker-up.ps1
+   ```
+
+   **Option 2: Manually**:
+   ```bash
+   docker-compose up --build -d
+   ```
+
+   This will build and start:
+   - ✅ Redis (container)
+   - ✅ RabbitMQ (container)
+   - ✅ Node.js Application (container)
+
+3. **View logs**:
+   ```bash
+   docker-compose logs -f app
+   ```
+
+4. **Stop everything**:
+   ```bash
+   docker-compose down
+   ```
+
+#### Option B: Only Redis with Docker 🐳
+
+If you prefer to run only Redis with Docker and the application locally:
+
+1. **Start Docker Desktop**
+
+2. **Run Redis**:
+   ```powershell
+   .\start-redis.ps1
+   ```
+   Or manually:
+   ```bash
+   docker run -d -p 6379:6379 --name redis redis:latest
+   ```
+
+3. **Run the application locally**:
+   ```bash
+   npm run dev
+   ```
+
+#### Option C: WSL2 (Windows Subsystem for Linux) 🐧
+
+1. **Install WSL2** (if you don't have it):
+   ```powershell
+   wsl --install
+   ```
+   Restart your computer after installation.
+
+2. **Open Ubuntu/WSL** and run:
+   ```bash
+   sudo apt update
+   sudo apt install redis-server -y
+   sudo service redis-server start
+   ```
+
+3. **Verify it works**:
+   ```bash
+   redis-cli ping
+   ```
+   Should respond `PONG`.
+
+#### Option D: Memurai (Native Windows Version) 🪟
+
+1. **Download Memurai**:
+   - Visit: https://www.memurai.com/get-memurai
+   - Download the Developer version (free)
+
+2. **Install Memurai**:
+   - Run the installer
+   - Follow the instructions (accept default values)
+
+3. **Start the service**:
+   - Memurai starts automatically as a Windows service
+   - Open "Services" and verify that "Memurai" is running
+
+### Step 3: Configure environment variables (REQUIRED)
+
+1. **Create `.env` file from template:**
+
+   **Windows (PowerShell):**
+   ```powershell
+   .\setup-env.ps1
+   ```
+   
+   **Or manually:**
+   ```bash
+   cp .env.example .env
+   # On Windows: copy .env.example .env
+   ```
+
+2. **Edit `.env` and add your MongoDB Atlas credentials:**
+   ```env
+   # MongoDB Atlas Connection (REQUIRED)
+   # Get your connection string from MongoDB Atlas Dashboard
+   MONGODB_URI=mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@cluster0.c9abu9a.mongodb.net/ecommerce?appName=Cluster0
+   
+   # Redis Configuration
+   REDIS_URL=redis://localhost:6379
+   
+   # RabbitMQ Configuration
+   RABBITMQ_URL=amqp://localhost:5672
+   
+   # Server Configuration
+   PORT=3000
+   NODE_ENV=development
+   FRONTEND_URL=http://localhost:5173
+   ```
+
+**⚠️ SECURITY BEST PRACTICES**: 
+- ✅ The `.env` file is in `.gitignore` and will **NOT** be pushed to GitHub
+- ✅ **NEVER** commit real credentials to the repository
+- ✅ Use `.env.example` as a template (it contains placeholders, not real credentials)
+- ✅ For QA/Production, use **GitHub Secrets** (see [Deployment Guide](docs/DEPLOYMENT.md))
+- ✅ Rotate credentials regularly
+- ✅ Use different credentials for development, QA, and production environments
+
+**📚 For QA/Production deployment**, see [Deployment Guide](docs/DEPLOYMENT.md) for instructions on using GitHub Secrets.
+
+### Step 4: Run with Docker Compose (Recommended)
+
+If you chose option A (Docker Compose), everything is containerized:
+
+```powershell
+.\docker-up.ps1
+```
+
+Or manually:
+```bash
+docker-compose up --build -d
+docker-compose logs -f app
+```
+
+### Step 5: Verify Redis
+
+To verify that Redis is working correctly:
+
+**With Docker:**
+```bash
+docker exec -it redis redis-cli ping
+# Should respond: PONG
+```
+
+**With WSL2:**
+```bash
+redis-cli ping
+# Should respond: PONG
+```
+
+**With Memurai:**
+Open PowerShell and run:
+```powershell
+redis-cli ping
+# Should respond: PONG
+```
+
+### Step 6: Run (if not using Docker Compose)
+
+```bash
+# Development
+npm run dev
+
+# Production (compile first)
+npm run build
+node dist/index.js
+```
+
+**Verification**: When you run `npm run dev`, you should see:
+- `✅ Connected to Redis` if Redis is running
+- `⚠️ Redis not available, using in-memory fallback` if Redis is not available (but the app will still work)
+
+## 🛠️ Redis Management
+
+### Useful Commands
+
+**With Docker:**
+
+**Using helper scripts:**
+```powershell
+# Start Redis
+.\start-redis.ps1
+
+# Stop Redis
+.\stop-redis.ps1
+```
+
+**Or manually:**
+```bash
+# Start Redis
+docker start redis
+
+# Stop Redis
+docker stop redis
+
+# View logs
+docker logs redis
+
+# Remove container
+docker rm -f redis
+```
+
+**With WSL2:**
+```bash
+# Start Redis
+sudo service redis-server start
+
+# Stop Redis
+sudo service redis-server stop
+
+# Restart Redis
+sudo service redis-server restart
+
+# View status
+sudo service redis-server status
+```
+
+**With Memurai:**
+- Open Windows "Services"
+- Search for "Memurai" and right-click to start/stop
+
+### Access Redis CLI
+
+To interact with Redis directly:
+
+```bash
+# With Docker
+docker exec -it redis redis-cli
+
+# With WSL2
+redis-cli
+
+# With Memurai (from PowerShell)
+redis-cli
+```
+
+Inside the CLI you can run:
+```redis
+# View all keys
+KEYS *
+
+# View value of a key
+GET product:1
+
+# Delete a key
+DEL product:1
+
+# Delete all keys
+FLUSHALL
+
+# Exit
+exit
+```
+
+## 🔄 Retry System with RabbitMQ
+
+The retry system is implemented in `RabbitMQEventPublisher`:
+
+- **Automatic retry** with exponential backoff
+- **Dead Letter Queue (DLQ)** for events that fail after multiple attempts
+- **Configurable**: `maxRetries` (default: 3)
+
+```typescript
+// Usage with automatic retry
+await eventPublisher.publishWithRetry('order.created', {
+  orderId: order.id,
+  customerId: order.customerId,
+  total: order.total
+});
+```
+
+## 💾 Cache with Redis
+
+The cache system is implemented in `RedisCacheService`:
+
+- **In-memory fallback** if Redis is not available
+- **Configurable TTL** for each key
+- **Automatic cleanup** of expired entries
+
+```typescript
+// Cache usage
+const products = await getProductsUseCase.execute({ 
+  category: 'Electronics',
+  useCache: true 
+});
+```
+
+## 🎯 Implemented Use Cases
+
+### 1. CreateOrderUseCase
+Creates an order validating:
+- Customer existence and status
+- Stock availability
+- Total calculation
+- Event publication with retry
+
+### 2. AddToCartUseCase
+Adds products to cart:
+- Customer and product validation
+- Quantity management
+- Cart persistence
+
+### 3. GetProductsUseCase
+Gets products with cache:
+- Category support
+- Automatic cache (TTL: 5 min)
+- Database fallback
+
+### 4. GetProductByIdUseCase
+Gets a product by ID:
+- Automatic cache (TTL: 10 min)
+- Query optimization
+
+## 🏛️ Hexagonal Architecture Principles
+
+### Domain Layer (Core)
+- **Depends on nothing** - It's the business core
+- Contains entities, values and business rules
+- Defines **ports** (interfaces) that infrastructure will implement
+
+### Application Layer
+- **Depends only on domain**
+- Contains use cases that coordinate the domain
+- Doesn't know infrastructure details
+
+### Infrastructure Layer
+- **Depends on domain** (implements ports)
+- Contains adapters (MongoDB, RabbitMQ, Redis)
+- Can be replaced without affecting the domain
+
+## 🔧 Development
+
+### Compile TypeScript
+
+```bash
+npm run build
+```
+
+### Verify types
+
+```bash
+npm run check
+```
+
+## 📝 Notes
+
+- MongoDB repositories use **Mongoose ODM** for database operations
+- RabbitMQ and Redis have **fallbacks** if not available
+- The project is designed to be easily extensible
+
+## 🎓 Learn More
+
+- [Hexagonal Architecture (Alistair Cockburn)](https://alistair.cockburn.us/hexagonal-architecture/)
+- [Ports & Adapters Pattern](https://herbertograca.com/2017/11/16/explicit-architecture-01-ddd-hexagonal-onion-clean-cqrs-how-i-put-it-all-together/)
+
+## 📄 License
+
+MIT

@@ -1,0 +1,143 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+      
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      
+      - name: Install dependencies
+        run: pnpm install
+      
+      - name: Type check
+        run: pnpm run check
+      
+      - name: Build
+        run: pnpm run build
+
+  deploy-qa:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'
+    environment: qa
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+      
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      
+      - name: Install dependencies
+        run: pnpm install
+      
+      - name: Build
+        run: pnpm run build
+      
+      - name: Create .env file for QA
+        run: |
+          cat > .env << EOF
+          MONGODB_URI=${{ secrets.QA_MONGODB_URI }}
+          REDIS_URL=${{ secrets.QA_REDIS_URL }}
+          RABBITMQ_URL=${{ secrets.QA_RABBITMQ_URL }}
+          PORT=3000
+          NODE_ENV=qa
+          FRONTEND_URL=${{ secrets.QA_FRONTEND_URL }}
+          EOF
+        shell: bash
+      
+      - name: Validate environment variables
+        run: |
+          if [ -z "${{ secrets.QA_MONGODB_URI }}" ]; then
+            echo "❌ QA_MONGODB_URI secret is not set"
+            exit 1
+          fi
+          echo "✅ All required secrets are set"
+        shell: bash
+      
+      # Add your deployment steps here
+      # Example: Deploy to QA server, run Docker, etc.
+      - name: Deploy to QA
+        run: |
+          echo "🚀 Deploying to QA environment..."
+          # Add your deployment commands here
+          # Example: docker-compose -f docker-compose.prod.yml up -d
+
+  deploy-production:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+      
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      
+      - name: Install dependencies
+        run: pnpm install
+      
+      - name: Build
+        run: pnpm run build
+      
+      - name: Create .env file for Production
+        run: |
+          cat > .env << EOF
+          MONGODB_URI=${{ secrets.PROD_MONGODB_URI }}
+          REDIS_URL=${{ secrets.PROD_REDIS_URL }}
+          RABBITMQ_URL=${{ secrets.PROD_RABBITMQ_URL }}
+          PORT=3000
+          NODE_ENV=production
+          FRONTEND_URL=${{ secrets.PROD_FRONTEND_URL }}
+          EOF
+        shell: bash
+      
+      - name: Validate environment variables
+        run: |
+          if [ -z "${{ secrets.PROD_MONGODB_URI }}" ]; then
+            echo "❌ PROD_MONGODB_URI secret is not set"
+            exit 1
+          fi
+          echo "✅ All required secrets are set"
+        shell: bash
+      
+      # Add your deployment steps here
+      - name: Deploy to Production
+        run: |
+          echo "🚀 Deploying to Production environment..."
+          # Add your deployment commands here
+

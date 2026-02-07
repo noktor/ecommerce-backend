@@ -1,0 +1,101 @@
+version: '3.8'
+
+services:
+  # Redis per cache i distributed locks
+  redis:
+    image: redis:latest
+    container_name: redis-dev
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - app-network
+
+  # RabbitMQ per events i cues
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq-dev
+    ports:
+      - "5672:5672"   # AMQP port
+      - "15672:15672" # Management UI
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ecommerce-backend
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+      - MONGODB_URI=${MONGODB_URI}
+      - PORT=${PORT:-3000}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
+    ports:
+      - "3000:3000"
+    volumes:
+      # Montar src per hot-reload en desenvolupament
+      - ./src:/app/src
+      # Evitar sobreescriure node_modules del contenidor
+      - /app/node_modules
+    restart: unless-stopped
+    networks:
+      - app-network
+    # ts-node per desenvolupament amb hot-reload
+    command: pnpm run dev
+
+  # Frontend executat localment (veure package.json per comandes)
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #   container_name: ecommerce-frontend
+  #   depends_on:
+  #     - app
+  #   environment:
+  #     - VITE_API_URL=http://localhost:3000/api
+  #   ports:
+  #     - "5173:5173"
+  #   volumes:
+  #     - ./frontend:/app
+  #     - /app/node_modules
+  #   restart: unless-stopped
+  #   networks:
+  #     - app-network
+  #   command: npm run dev -- --host
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+  rabbitmq-data:
+
