@@ -178,6 +178,10 @@ async function main() {
   }
 
   // Get frontend URL - required in production
+  console.log('🔍 Checking FRONTEND_URL configuration...');
+  console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
+  console.log(`   FRONTEND_URL: ${process.env.FRONTEND_URL || 'NOT SET'}`);
+  
   const frontendUrl = process.env.FRONTEND_URL || (
     process.env.NODE_ENV === 'production' 
       ? (() => {
@@ -189,7 +193,11 @@ async function main() {
       : 'http://localhost:5173'
   );
   
-  console.log(`🌐 Frontend URL configured: ${frontendUrl}`);
+  console.log(`✅ Frontend URL configured: ${frontendUrl}`);
+  if (frontendUrl.includes('localhost') && process.env.NODE_ENV === 'production') {
+    console.error('⚠️  WARNING: Using localhost in production! This is incorrect.');
+    console.error('   Please set FRONTEND_URL=https://noktor-store.netlify.app in Render');
+  }
 
   // Initialize auth use cases
   const registerUserUseCase = new RegisterUserUseCase(

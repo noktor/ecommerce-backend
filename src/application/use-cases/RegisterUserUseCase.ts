@@ -56,6 +56,8 @@ export class RegisterUserUseCase {
 
     // Send verification email
     const verificationUrl = `${this.frontendUrl}/verify-email/${verificationToken}`;
+    console.log(`📧 Generating verification email with URL: ${verificationUrl}`);
+    console.log(`   Frontend URL from config: ${this.frontendUrl}`);
     await this.emailService.sendVerificationEmail({
       email: savedCustomer.email,
       name: savedCustomer.name,
