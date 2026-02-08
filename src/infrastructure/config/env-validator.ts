@@ -14,6 +14,10 @@ interface RequiredEnvVars {
   SENDGRID_API_KEY?: string;
   SENDGRID_FROM_EMAIL?: string;
   FRONTEND_URL?: string;
+  CLOUDINARY_URL?: string;
+  CLOUDINARY_CLOUD_NAME?: string;
+  CLOUDINARY_API_KEY?: string;
+  CLOUDINARY_API_SECRET?: string;
 }
 
 export function validateEnvironmentVariables(): void {
@@ -74,6 +78,21 @@ export function validateEnvironmentVariables(): void {
     if (!sendGridApiKey.startsWith('SG.')) {
       console.warn('⚠️  SENDGRID_API_KEY format may be incorrect (should start with SG.)');
     }
+  }
+
+  // Cloudinary (optional): CLOUDINARY_URL or the three separate vars
+  const cloudinaryUrl = process.env.CLOUDINARY_URL;
+  const cloudinaryCloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const cloudinaryApiKey = process.env.CLOUDINARY_API_KEY;
+  const cloudinaryApiSecret = process.env.CLOUDINARY_API_SECRET;
+  const hasCloudinaryUrl = cloudinaryUrl?.trim().startsWith('cloudinary://');
+  const hasCloudinaryVars =
+    cloudinaryCloudName && cloudinaryApiKey && cloudinaryApiSecret;
+  if (!hasCloudinaryUrl && !hasCloudinaryVars) {
+    console.warn('⚠️  Cloudinary not configured:');
+    console.warn('   Set CLOUDINARY_URL (e.g. cloudinary://API_KEY:API_SECRET@CLOUD_NAME)');
+    console.warn('   or CLOUDINARY_CLOUD_NAME + CLOUDINARY_API_KEY + CLOUDINARY_API_SECRET');
+    console.warn('   Image upload service will not be available. See .env.example.');
   }
 
   // Log environment info (without sensitive data)

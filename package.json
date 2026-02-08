@@ -1,7 +1,8 @@
 {
   "name": "ecommerce-backend",
   "version": "1.0.0",
-  "engines": { "node": ">=22" },
+  "engines": { "node": ">=18" },
+  "packageManager": "pnpm@9.15.0",
   "description": "E-commerce backend with hexagonal architecture, RabbitMQ retry system and Redis cache",
   "main": "dist/index.js",
   "scripts": {
@@ -33,6 +34,7 @@
     "@sendgrid/mail": "^8.1.3",
     "amqplib": "^0.10.3",
     "bcrypt": "^5.1.1",
+    "cloudinary": "^2.5.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.4",
     "express": "^4.18.2",

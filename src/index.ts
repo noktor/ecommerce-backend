@@ -25,6 +25,7 @@ import { MongoCustomerRepository } from './infrastructure/repositories/MongoCust
 import { MongoOrderRepository } from './infrastructure/repositories/MongoOrderRepository';
 import { MongoProductRepository } from './infrastructure/repositories/MongoProductRepository';
 import { BcryptPasswordService } from './infrastructure/services/BcryptPasswordService';
+import { CloudinaryImageService } from './infrastructure/services/CloudinaryImageService';
 import { JWTTokenService } from './infrastructure/services/JWTTokenService';
 import { SendGridEmailService } from './infrastructure/services/SendGridEmailService';
 // Import models to ensure they are registered with Mongoose
@@ -149,6 +150,19 @@ async function main() {
     }
     console.warn('   Email verification and password reset will not work properly.');
     console.warn('   See README.md for SendGrid setup instructions.');
+  }
+
+  // Initialize Cloudinary if all env vars are set
+  const cloudinaryCloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const cloudinaryApiKey = process.env.CLOUDINARY_API_KEY;
+  const cloudinaryApiSecret = process.env.CLOUDINARY_API_SECRET;
+  if (cloudinaryCloudName && cloudinaryApiKey && cloudinaryApiSecret) {
+    try {
+      new CloudinaryImageService(cloudinaryCloudName, cloudinaryApiKey, cloudinaryApiSecret);
+      console.log('✅ Cloudinary image service configured');
+    } catch (error) {
+      console.error('❌ Failed to initialize Cloudinary:', error);
+    }
   }
 
   // Create a mock email service for fallback
