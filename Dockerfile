@@ -8,14 +8,14 @@ RUN apk add --no-cache python3 make g++
 WORKDIR /app
 
 # Copy configuration files
-COPY package*.json ./
+COPY package.json pnpm-lock.yaml ./
 COPY tsconfig.json ./
 COPY .npmrc* ./
 
-# Install pnpm
-RUN npm install -g pnpm
+# Use pnpm 9 via Corepack (matches lockfile)
+RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 
-# Install all dependencies with pnpm
+# Install all dependencies
 RUN pnpm install
 
 # Build bcrypt manually after installation
