@@ -33,7 +33,7 @@ export function createCartRouter(controller: CartController, tokenService: Token
    *       500:
    *         description: Internal server error
    */
-  router.get('/me', authMiddleware, (req, res, next) => controller.getByCustomerId(req, res, next));
+  router.get('/me', authMiddleware, (req, res, next) => controller.getByUserId(req, res, next));
 
   /**
    * @swagger

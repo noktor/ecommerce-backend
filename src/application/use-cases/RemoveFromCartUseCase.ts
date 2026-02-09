@@ -5,15 +5,15 @@ import type { CacheService } from '../../domain/services/CacheService';
 import type { LockService } from '../../domain/services/LockService';
 
 export interface RemoveFromCartRequest {
-  customerId: string;
+  userId: string;
   productId: string;
 }
 
 export class RemoveFromCartUseCase {
-  private readonly CART_LOCK_TTL = 10; // 10 seconds lock (reduced from 30)
-  private readonly MAX_RETRY_ATTEMPTS = 5; // Maximum retry attempts
-  private readonly INITIAL_RETRY_DELAY = 50; // Initial delay in milliseconds (50ms)
-  private readonly MAX_RETRY_DELAY = 500; // Maximum delay in milliseconds (500ms)
+  private readonly CART_LOCK_TTL = 10;
+  private readonly MAX_RETRY_ATTEMPTS = 5;
+  private readonly INITIAL_RETRY_DELAY = 50;
+  private readonly MAX_RETRY_DELAY = 500;
 
   constructor(
     private cartRepository: CartRepository,
@@ -22,31 +22,20 @@ export class RemoveFromCartUseCase {
     private eventPublisher: EventPublisher
   ) {}
 
-  /**
-   * Acquire lock with retry mechanism
-   * Uses exponential backoff to retry acquiring the lock
-   */
   private async acquireLockWithRetry(lockKey: string, ttlSeconds: number): Promise<boolean> {
     for (let attempt = 0; attempt < this.MAX_RETRY_ATTEMPTS; attempt++) {
       const lockAcquired = await this.lockService.acquireLock(lockKey, ttlSeconds);
-
-      if (lockAcquired) {
-        return true;
-      }
-
-      // If not the last attempt, wait before retrying
+      if (lockAcquired) return true;
       if (attempt < this.MAX_RETRY_ATTEMPTS - 1) {
-        // Exponential backoff: 50ms, 100ms, 200ms, 400ms, 500ms (capped)
         const delay = Math.min(this.INITIAL_RETRY_DELAY * 2 ** attempt, this.MAX_RETRY_DELAY);
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
-
     return false;
   }
 
   async execute(request: RemoveFromCartRequest): Promise<Cart> {
-    const lockKey = `cart:${request.customerId}`;
+    const lockKey = `cart:${request.userId}`;
     const lockAcquired = await this.acquireLockWithRetry(lockKey, this.CART_LOCK_TTL);
 
     if (!lockAcquired) {
@@ -56,54 +45,37 @@ export class RemoveFromCartUseCase {
     }
 
     try {
-      // Get cart
-      const cart = await this.cartRepository.findByCustomerId(request.customerId);
+      const cart = await this.cartRepository.findByUserId(request.userId);
 
       if (!cart) {
         throw new Error('Cart not found');
       }
 
-      // Check if cart expired
       if (cart.isExpired()) {
         throw new Error('Cart has expired. Please add items again.');
       }
 
-      // Check if item exists
       const itemExists = cart.items.some((item) => item.productId === request.productId);
       if (!itemExists) {
         throw new Error('Item not found in cart');
       }
 
-      // Remove item
       const updatedItems = cart.removeItem(request.productId);
-
-      // Create updated cart (preserve expiration)
       const updatedCart = new Cart(
         cart.id,
-        cart.customerId,
+        cart.userId,
         updatedItems,
         new Date(),
         cart.expiresAt
       );
 
-      // Save cart
       await this.cartRepository.save(updatedCart);
-
-      // Cache the cart with TTL matching expiration
-      const cacheKey = `cart:${request.customerId}`;
       const cacheTTL = updatedCart.getExpiresInSeconds();
-      await this.cacheService.set(cacheKey, updatedCart, cacheTTL);
+      await this.cacheService.set(`cart:${request.userId}`, updatedCart, cacheTTL);
 
-      // NOTE: We do NOT invalidate product cache here because:
-      // 1. Stock in database doesn't change when removing from cart
-      // 2. Invalidating cache on every cart modification would reduce cache effectiveness
-      // 3. Product cache has a short TTL (5 minutes) which provides reasonable freshness
-      // 4. Stock validation happens at order creation time, ensuring data consistency
-
-      // Publish event for cart update
       await this.eventPublisher.publish('cart.updated', {
         cartId: updatedCart.id,
-        customerId: updatedCart.customerId,
+        userId: updatedCart.userId,
         productId: request.productId,
         action: 'remove',
       });

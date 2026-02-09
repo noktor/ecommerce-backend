@@ -22,19 +22,17 @@ export class OrdersController {
         throw new AppError(400, 'Items must be a non-empty array');
       }
 
-      // If user is authenticated, use their customerId; otherwise, require guest info
-      let customerId: string | null = null;
+      let userId: string | null = null;
       if (req.userId) {
-        customerId = req.userId;
+        userId = req.userId;
       } else {
-        // Guest order - validate guest info
         if (!guestEmail || !guestName) {
           throw new AppError(400, 'Guest email and name are required for guest orders');
         }
       }
 
       const order = await this.createOrderUseCase.execute({
-        customerId,
+        userId,
         items,
         shippingAddress,
         guestEmail,
@@ -60,8 +58,7 @@ export class OrdersController {
         throw new AppError(404, 'Order not found');
       }
 
-      // If user is authenticated, verify they own the order (unless it's a guest order)
-      if (req.userId && order.customerId && order.customerId !== req.userId) {
+      if (req.userId && order.userId && order.userId !== req.userId) {
         throw new AppError(403, 'Access denied: You do not have permission to view this order');
       }
 

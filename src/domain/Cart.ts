@@ -7,7 +7,7 @@ export interface CartItem {
 export class Cart {
   constructor(
     public readonly id: string,
-    public readonly customerId: string,
+    public readonly userId: string,
     public readonly items: CartItem[],
     public readonly updatedAt: Date,
     public readonly expiresAt?: Date // Cart expiration (like Ticketmaster reservations)

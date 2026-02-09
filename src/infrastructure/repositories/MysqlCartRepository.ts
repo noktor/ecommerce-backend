@@ -11,19 +11,19 @@ export class MysqlCartRepository implements CartRepository {
     await new Promise((resolve) => setTimeout(resolve, delay));
   }
 
-  async findByCustomerId(customerId: string): Promise<Cart | null> {
+  async findByUserId(userId: string): Promise<Cart | null> {
     await this.simulateLatency();
-    return Array.from(this.carts.values()).find((c) => c.customerId === customerId) || null;
+    return Array.from(this.carts.values()).find((c) => c.userId === userId) || null;
   }
 
   async save(cart: Cart): Promise<void> {
-    await this.simulateLatency(80, 200); // Writes are typically slower
+    await this.simulateLatency(80, 200);
     this.carts.set(cart.id, cart);
   }
 
-  async clear(customerId: string): Promise<void> {
+  async clear(userId: string): Promise<void> {
     await this.simulateLatency();
-    const cart = await this.findByCustomerId(customerId);
+    const cart = await this.findByUserId(userId);
     if (cart) {
       this.carts.delete(cart.id);
     }

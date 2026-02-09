@@ -1,7 +1,7 @@
 export interface TokenPayload {
   userId: string;
   email: string;
-  role?: 'user' | 'retailer';
+  role?: 'customer' | 'retailer';
 }
 
 export interface TokenService {

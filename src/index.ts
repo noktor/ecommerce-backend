@@ -27,7 +27,7 @@ import { seedDatabase } from './infrastructure/database/seed';
 import { RabbitMQEventPublisher } from './infrastructure/events/RabbitMQEventPublisher';
 import { RedisLockService } from './infrastructure/locks/RedisLockService';
 import { MongoCartRepository } from './infrastructure/repositories/MongoCartRepository';
-import { MongoCustomerRepository } from './infrastructure/repositories/MongoCustomerRepository';
+import { MongoUserRepository } from './infrastructure/repositories/MongoUserRepository';
 import { MongoOrderRepository } from './infrastructure/repositories/MongoOrderRepository';
 import { MongoProductRepository } from './infrastructure/repositories/MongoProductRepository';
 import { MongoStoreRepository } from './infrastructure/repositories/MongoStoreRepository';
@@ -38,7 +38,7 @@ import { SendGridEmailService } from './infrastructure/services/SendGridEmailSer
 // Import models to ensure they are registered with Mongoose
 import './infrastructure/models/ProductModel';
 import './infrastructure/models/CartModel';
-import './infrastructure/models/CustomerModel';
+import './infrastructure/models/UserModel';
 import './infrastructure/models/OrderModel';
 
 import { createApp, startServer } from './api/server';
@@ -86,7 +86,7 @@ async function main() {
 
   // Initialize infrastructure
   const productRepository = new MongoProductRepository();
-  const customerRepository = new MongoCustomerRepository();
+  const userRepository = new MongoUserRepository();
   const orderRepository = new MongoOrderRepository();
   const storeRepository = new MongoStoreRepository();
   const cartRepository = new MongoCartRepository();
@@ -192,7 +192,7 @@ async function main() {
   // Initialize use cases
   const createOrderUseCase = new CreateOrderUseCase(
     orderRepository,
-    customerRepository,
+    userRepository,
     productRepository,
     cartRepository,
     eventPublisher,
@@ -202,7 +202,7 @@ async function main() {
 
   const addToCartUseCase = new AddToCartUseCase(
     cartRepository,
-    customerRepository,
+    userRepository,
     productRepository,
     cacheService,
     lockService,
@@ -254,34 +254,34 @@ async function main() {
 
   // Initialize auth use cases
   const registerUserUseCase = new RegisterUserUseCase(
-    customerRepository,
+    userRepository,
     passwordService,
     emailService || mockEmailService,
     frontendUrl
   );
 
   const loginUserUseCase = new LoginUserUseCase(
-    customerRepository,
+    userRepository,
     passwordService,
     tokenService,
     true // require email verification
   );
 
-  const verifyEmailUseCase = new VerifyEmailUseCase(customerRepository);
+  const verifyEmailUseCase = new VerifyEmailUseCase(userRepository);
 
   const requestPasswordResetUseCase = new RequestPasswordResetUseCase(
-    customerRepository,
+    userRepository,
     emailService || mockEmailService,
     frontendUrl
   );
 
   const resetPasswordUseCase = new ResetPasswordUseCase(
-    customerRepository,
+    userRepository,
     passwordService,
     emailService || mockEmailService
   );
 
-  const getCurrentUserUseCase = new GetCurrentUserUseCase(customerRepository);
+  const getCurrentUserUseCase = new GetCurrentUserUseCase(userRepository);
 
   // Create Express app
   const app = createApp(
@@ -307,7 +307,7 @@ async function main() {
     {
       cartRepository,
       orderRepository,
-      customerRepository,
+      userRepository,
       storeRepository,
     },
     {

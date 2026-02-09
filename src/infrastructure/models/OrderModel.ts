@@ -19,7 +19,7 @@ export interface IOrderItem {
 
 export interface IOrder extends Document {
   id: string;
-  customerId: string | null; // Allow null for guest orders
+  userId: string | null; // Allow null for guest orders
   items: IOrderItem[];
   total: number;
   status: OrderStatus;
@@ -42,7 +42,7 @@ const OrderItemSchema = new Schema<IOrderItem>(
 
 const OrderSchema = new Schema<IOrder>({
   id: { type: String, required: true, unique: true, index: true },
-  customerId: { type: String, required: false, index: true, default: null }, // Allow null for guest orders
+  userId: { type: String, required: false, index: true, default: null }, // Allow null for guest orders
   items: [OrderItemSchema],
   total: { type: Number, required: true },
   status: {
