@@ -15,7 +15,7 @@ export class CartController {
     private cacheService: CacheService
   ) {}
 
-  async getByCustomerId(
+  async getByUserId(
     req: AuthenticatedRequest,
     res: Response,
     next: NextFunction
@@ -24,29 +24,25 @@ export class CartController {
       if (!req.userId) {
         throw new AppError(401, 'Authentication required');
       }
-      const customerId = req.userId;
-      const cacheKey = `cart:${customerId}`;
+      const userId = req.userId;
+      const cacheKey = `cart:${userId}`;
 
-      // Try to get from cache first
       const cachedCart = await this.cacheService.get<Cart>(cacheKey);
       if (cachedCart) {
-        // Reconstruct Date objects if needed (JSON.parse converts dates to strings)
         const cart = {
           ...cachedCart,
           updatedAt: new Date(cachedCart.updatedAt),
           expiresAt: cachedCart.expiresAt ? new Date(cachedCart.expiresAt) : undefined,
         };
 
-        // Check if cart expired
         if (cart.expiresAt && new Date() > cart.expiresAt) {
-          // Cart expired, clear it
-          await this.cartRepository.clear(customerId);
+          await this.cartRepository.clear(userId);
           await this.cacheService.delete(cacheKey);
           res.json({
             success: true,
             data: {
               id: null,
-              customerId,
+              userId,
               items: [],
               updatedAt: new Date(),
             },
@@ -61,15 +57,14 @@ export class CartController {
         return;
       }
 
-      // If not in cache, get from repository
-      const cart = await this.cartRepository.findByCustomerId(customerId);
+      const cart = await this.cartRepository.findByUserId(userId);
 
       if (!cart) {
         res.json({
           success: true,
           data: {
             id: null,
-            customerId,
+            userId,
             items: [],
             updatedAt: new Date(),
           },
@@ -77,14 +72,13 @@ export class CartController {
         return;
       }
 
-      // Check if cart expired
       if (cart.isExpired()) {
-        await this.cartRepository.clear(customerId);
+        await this.cartRepository.clear(userId);
         res.json({
           success: true,
           data: {
             id: null,
-            customerId,
+            userId,
             items: [],
             updatedAt: new Date(),
           },
@@ -122,7 +116,7 @@ export class CartController {
       }
 
       const cart = await this.addToCartUseCase.execute({
-        customerId: req.userId,
+        userId: req.userId,
         productId,
         quantity,
       });
@@ -153,7 +147,7 @@ export class CartController {
       }
 
       const cart = await this.removeFromCartUseCase.execute({
-        customerId: req.userId,
+        userId: req.userId,
         productId,
       });
 

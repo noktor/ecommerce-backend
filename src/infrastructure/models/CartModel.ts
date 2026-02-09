@@ -8,7 +8,7 @@ export interface ICartItem {
 
 export interface ICart extends Document {
   id: string;
-  customerId: string;
+  userId: string;
   items: ICartItem[];
   updatedAt: Date;
   expiresAt?: Date;
@@ -25,7 +25,7 @@ const CartItemSchema = new Schema<ICartItem>(
 
 const CartSchema = new Schema<ICart>({
   id: { type: String, required: true, unique: true, index: true },
-  customerId: { type: String, required: true, unique: true, index: true },
+  userId: { type: String, required: true, unique: true, index: true },
   items: [CartItemSchema],
   updatedAt: { type: Date, default: Date.now },
   expiresAt: { type: Date, index: { expireAfterSeconds: 0 } }, // TTL index

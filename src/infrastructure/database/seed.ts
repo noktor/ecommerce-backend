@@ -1,13 +1,12 @@
 // Load environment variables
 import 'dotenv/config';
 
-import { CustomerModel, CustomerStatus } from '../models/CustomerModel';
-import { CustomerRole } from '../../domain/Customer';
+import { UserModel, UserStatus } from '../models/UserModel';
+import { UserRole } from '../../domain/User';
 import { ProductModel } from '../models/ProductModel';
 
 export async function seedDatabase(): Promise<void> {
   try {
-    // Seed Products
     const existingProducts = await ProductModel.countDocuments();
 
     if (existingProducts === 0) {
@@ -65,33 +64,33 @@ export async function seedDatabase(): Promise<void> {
       console.log('ℹ️  Products collection already has data, skipping seed');
     }
 
-    // Seed Customers
-    const existingCustomers = await CustomerModel.countDocuments();
+    // Seed Users
+    const existingUsers = await UserModel.countDocuments();
 
-    if (existingCustomers === 0) {
-      const mockCustomers = [
+    if (existingUsers === 0) {
+      const mockUsers = [
         {
           id: '1',
           email: 'john@example.com',
           name: 'John Doe',
-          status: CustomerStatus.ACTIVE,
+          status: UserStatus.ACTIVE,
           createdAt: new Date(),
-          role: CustomerRole.USER,
+          role: UserRole.CUSTOMER,
         },
         {
           id: '2',
           email: 'retailer@example.com',
           name: 'Retailer User',
-          status: CustomerStatus.ACTIVE,
+          status: UserStatus.ACTIVE,
           createdAt: new Date(),
-          role: CustomerRole.RETAILER,
+          role: UserRole.RETAILER,
         },
       ];
 
-      await CustomerModel.insertMany(mockCustomers);
-      console.log('✅ Seeded customers collection');
+      await UserModel.insertMany(mockUsers);
+      console.log('✅ Seeded users collection');
     } else {
-      console.log('ℹ️  Customers collection already has data, skipping seed');
+      console.log('ℹ️  Users collection already has data, skipping seed');
     }
 
     console.log('✅ Database seeding completed');

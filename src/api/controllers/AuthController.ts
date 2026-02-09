@@ -37,12 +37,13 @@ export class AuthController {
         throw new AppError(400, 'Password must be at least 6 characters long');
       }
 
-      // Optional role: must be 'user' or 'retailer' if provided
-      const validRole = role === undefined || role === null || role === ''
-        ? undefined
-        : role === 'retailer'
-          ? 'retailer'
-          : 'user';
+      // Optional role: must be 'customer' or 'retailer' if provided
+      const validRole =
+        role === undefined || role === null || role === ''
+          ? undefined
+          : role === 'retailer'
+            ? 'retailer'
+            : 'customer';
 
       const result = await this.registerUserUseCase.execute({
         email,
@@ -55,9 +56,9 @@ export class AuthController {
         success: true,
         message: result.message,
         data: {
-          id: result.customer.id,
-          email: result.customer.email,
-          name: result.customer.name,
+          id: result.user.id,
+          email: result.user.email,
+          name: result.user.name,
         },
       });
     } catch (error) {
@@ -79,7 +80,7 @@ export class AuthController {
         success: true,
         data: {
           token: result.token,
-          user: result.customer,
+          user: result.user,
         },
       });
     } catch (error) {

@@ -64,7 +64,7 @@ const options: swaggerJsdoc.Options = {
           type: 'object',
           properties: {
             id: { type: 'string', nullable: true },
-            customerId: { type: 'string' },
+            userId: { type: 'string' },
             items: {
               type: 'array',
               items: { $ref: '#/components/schemas/CartItem' },
@@ -86,7 +86,7 @@ const options: swaggerJsdoc.Options = {
           type: 'object',
           properties: {
             id: { type: 'string' },
-            customerId: { type: 'string' },
+            userId: { type: 'string' },
             items: {
               type: 'array',
               items: { $ref: '#/components/schemas/OrderItem' },

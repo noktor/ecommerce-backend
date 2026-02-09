@@ -1,21 +1,21 @@
 import mongoose, { type Document, Schema } from 'mongoose';
-import { CustomerRole, CustomerStatus } from '../../domain/Customer';
-export { CustomerStatus } from '../../domain/Customer';
+import { UserRole, UserStatus } from '../../domain/User';
+export { UserStatus } from '../../domain/User';
 
 export interface IPasswordHistory {
   hash: string;
   changedAt: Date;
 }
 
-export interface ICustomer extends Document {
+export interface IUser extends Document {
   id: string;
   email: string;
   name: string;
-  status: CustomerStatus;
+  status: UserStatus;
   createdAt: Date;
-  role: CustomerRole;
+  role: UserRole;
   passwordHash?: string;
-  passwordHistory?: IPasswordHistory[]; // Last N password hashes
+  passwordHistory?: IPasswordHistory[];
   emailVerified: boolean;
   verificationToken?: string;
   verificationTokenExpiry?: Date;
@@ -31,21 +31,21 @@ const PasswordHistorySchema = new Schema<IPasswordHistory>(
   { _id: false }
 );
 
-const CustomerSchema = new Schema<ICustomer>({
+const UserSchema = new Schema<IUser>({
   id: { type: String, required: true, unique: true, index: true },
   email: { type: String, required: true, unique: true, index: true },
   name: { type: String, required: true },
   status: {
     type: String,
-    enum: Object.values(CustomerStatus),
+    enum: Object.values(UserStatus),
     required: true,
-    default: CustomerStatus.ACTIVE,
+    default: UserStatus.ACTIVE,
   },
   role: {
     type: String,
-    enum: Object.values(CustomerRole),
+    enum: Object.values(UserRole),
     required: true,
-    default: CustomerRole.USER,
+    default: UserRole.CUSTOMER,
   },
   createdAt: { type: Date, default: Date.now },
   passwordHash: { type: String, required: false },
@@ -57,4 +57,4 @@ const CustomerSchema = new Schema<ICustomer>({
   resetTokenExpiry: { type: Date, required: false },
 });
 
-export const CustomerModel = mongoose.model<ICustomer>('Customer', CustomerSchema);
+export const UserModel = mongoose.model<IUser>('User', UserSchema);

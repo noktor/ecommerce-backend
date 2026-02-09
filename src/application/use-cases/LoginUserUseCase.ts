@@ -1,7 +1,7 @@
-import type { CustomerRepository } from '../../domain/repositories/CustomerRepository';
+import type { UserRepository } from '../../domain/repositories/UserRepository';
 import type { PasswordService } from '../../domain/services/PasswordService';
 import type { TokenService } from '../../domain/services/TokenService';
-import { CustomerRole } from '../../domain/Customer';
+import { UserRole } from '../../domain/User';
 
 export interface LoginUserInput {
   email: string;
@@ -10,70 +10,65 @@ export interface LoginUserInput {
 
 export interface LoginUserOutput {
   token: string;
-  customer: {
+  user: {
     id: string;
     email: string;
     name: string;
     emailVerified: boolean;
-    role: 'user' | 'retailer';
+    role: 'customer' | 'retailer';
   };
 }
 
 export class LoginUserUseCase {
   constructor(
-    private customerRepository: CustomerRepository,
+    private userRepository: UserRepository,
     private passwordService: PasswordService,
     private tokenService: TokenService,
     private requireEmailVerification: boolean = true
   ) {}
 
   async execute(input: LoginUserInput): Promise<LoginUserOutput> {
-    // Find customer by email
-    const customer = await this.customerRepository.findByEmail(input.email);
-    if (!customer) {
+    const user = await this.userRepository.findByEmail(input.email);
+    if (!user) {
       throw new Error('Invalid email or password');
     }
 
-    // Check if password is set (for existing customers without passwords)
-    if (!customer.passwordHash) {
+    if (!user.passwordHash) {
       throw new Error('Invalid email or password');
     }
 
-    // Verify password
     const isPasswordValid = await this.passwordService.verifyPassword(
       input.password,
-      customer.passwordHash
+      user.passwordHash
     );
 
     if (!isPasswordValid) {
       throw new Error('Invalid email or password');
     }
 
-    // Check email verification if required
-    if (this.requireEmailVerification && !customer.isEmailVerified()) {
+    if (this.requireEmailVerification && !user.isEmailVerified()) {
       throw new Error('Please verify your email before logging in');
     }
 
-    // Check if customer can login
-    if (!customer.canLogin()) {
+    if (!user.canLogin()) {
       throw new Error('Account is not active or email not verified');
     }
 
-    // Generate token
+    const roleApi = user.role === UserRole.RETAILER ? 'retailer' : 'customer';
     const token = this.tokenService.generateToken({
-      userId: customer.id,
-      email: customer.email,
-      role: customer.role === CustomerRole.RETAILER ? 'retailer' : 'user',
+      userId: user.id,
+      email: user.email,
+      role: roleApi,
     });
 
     return {
       token,
-      customer: {
-        id: customer.id,
-        email: customer.email,
-        name: customer.name,
-        emailVerified: customer.emailVerified,
-        role: customer.role === CustomerRole.RETAILER ? 'retailer' : 'user',
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        emailVerified: user.emailVerified,
+        role: roleApi,
       },
     };
   }

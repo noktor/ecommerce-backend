@@ -6,7 +6,7 @@ export class MongoOrderRepository implements OrderRepository {
   private documentToOrder(doc: IOrder): Order {
     return new Order(
       doc.id,
-      doc.customerId,
+      doc.userId,
       doc.items as OrderItem[],
       doc.total,
       doc.status as OrderStatus,
@@ -22,7 +22,7 @@ export class MongoOrderRepository implements OrderRepository {
       { id: order.id },
       {
         id: order.id,
-        customerId: order.customerId,
+        userId: order.userId,
         items: order.items,
         total: order.total,
         status: order.status,
@@ -40,8 +40,8 @@ export class MongoOrderRepository implements OrderRepository {
     return doc ? this.documentToOrder(doc) : null;
   }
 
-  async findByCustomerId(customerId: string): Promise<Order[]> {
-    const docs = await OrderModel.find({ customerId }).exec();
+  async findByUserId(userId: string): Promise<Order[]> {
+    const docs = await OrderModel.find({ userId }).exec();
     return docs.map((doc) => this.documentToOrder(doc));
   }
 

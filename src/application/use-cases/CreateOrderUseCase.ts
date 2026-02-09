@@ -1,26 +1,24 @@
-import { Customer } from '../../domain/Customer';
 import type { EventPublisher } from '../../domain/events/EventPublisher';
 import { Order, type OrderItem, OrderStatus } from '../../domain/Order';
-import { Product } from '../../domain/Product';
 import type { CartRepository } from '../../domain/repositories/CartRepository';
-import type { CustomerRepository } from '../../domain/repositories/CustomerRepository';
 import type { OrderRepository } from '../../domain/repositories/OrderRepository';
 import type { ProductRepository } from '../../domain/repositories/ProductRepository';
+import type { UserRepository } from '../../domain/repositories/UserRepository';
 import type { CacheService } from '../../domain/services/CacheService';
 import type { EmailService } from '../../domain/services/EmailService';
 
 export interface CreateOrderRequest {
-  customerId?: string | null; // Optional for guest orders
+  userId?: string | null;
   items: Array<{ productId: string; quantity: number }>;
   shippingAddress: string;
-  guestEmail?: string; // Email for guest orders
-  guestName?: string; // Name for guest orders
+  guestEmail?: string;
+  guestName?: string;
 }
 
 export class CreateOrderUseCase {
   constructor(
     private orderRepository: OrderRepository,
-    private customerRepository: CustomerRepository,
+    private userRepository: UserRepository,
     private productRepository: ProductRepository,
     private cartRepository: CartRepository,
     private eventPublisher: EventPublisher,
@@ -29,27 +27,23 @@ export class CreateOrderUseCase {
   ) {}
 
   async execute(request: CreateOrderRequest): Promise<Order> {
-    // Validate customer (only if customerId is provided)
-    let customerId: string | null = null;
-    if (request.customerId) {
-      const customer = await this.customerRepository.findById(request.customerId);
-      if (!customer) {
-        throw new Error('Customer not found');
+    let userId: string | null = null;
+    if (request.userId) {
+      const user = await this.userRepository.findById(request.userId);
+      if (!user) {
+        throw new Error('User not found');
       }
-      if (!customer.canPlaceOrder()) {
-        throw new Error(`Customer cannot place orders. Status: ${customer.status}`);
+      if (!user.canPlaceOrder()) {
+        throw new Error(`User cannot place orders. Status: ${user.status}`);
       }
-      customerId = customer.id;
+      userId = user.id;
     } else {
-      // Guest order - validate email and name are provided
       if (!request.guestEmail || !request.guestName) {
         throw new Error('Guest email and name are required for guest orders');
       }
-      // Use "guest" as customerId for guest orders (standard in e-commerce)
-      customerId = null;
+      userId = null;
     }
 
-    // Validate products and build order items
     const orderItems: OrderItem[] = [];
     let total = 0;
 
@@ -75,10 +69,9 @@ export class CreateOrderUseCase {
       total += subtotal;
     }
 
-    // Create order
     const order = new Order(
       this.generateOrderId(),
-      customerId,
+      userId,
       orderItems,
       total,
       OrderStatus.PENDING,
@@ -88,40 +81,29 @@ export class CreateOrderUseCase {
       request.guestName
     );
 
-    // Save order
     await this.orderRepository.save(order);
 
-    // Update stock and invalidate cache for affected products
     const affectedCategories = new Set<string>();
     for (const item of request.items) {
-      // Get product to know its category before updating stock
       const product = await this.productRepository.findById(item.productId);
       if (product) {
         affectedCategories.add(product.category);
       }
-
-      // Update stock
       await this.productRepository.updateStock(item.productId, -item.quantity);
-
-      // Invalidate cache for this specific product
       await this.cacheService.delete(`product:${item.productId}`);
     }
 
-    // Invalidate cache for product lists (all products and affected categories)
     await this.cacheService.delete('products:all');
     for (const category of affectedCategories) {
       await this.cacheService.delete(`products:category:${category}`);
     }
 
-    // Clear cart after successful order creation (only for authenticated users)
-    if (customerId) {
-      await this.cartRepository.clear(customerId);
-      const cartCacheKey = `cart:${customerId}`;
-      await this.cacheService.delete(cartCacheKey);
+    if (userId) {
+      await this.cartRepository.clear(userId);
+      await this.cacheService.delete(`cart:${userId}`);
     }
 
-    // Send order confirmation email for guest orders
-    if (!customerId && order.guestEmail && order.guestName && this.emailService) {
+    if (!userId && order.guestEmail && order.guestName && this.emailService) {
       try {
         await this.emailService.sendOrderConfirmationEmail({
           email: order.guestEmail,
@@ -138,14 +120,12 @@ export class CreateOrderUseCase {
         });
       } catch (error) {
         console.error('⚠️  Error sending order confirmation email (non-critical):', error);
-        // Don't throw - email failure shouldn't break order creation
       }
     }
 
-    // Publish event with retry
     await this.eventPublisher.publishWithRetry('order.created', {
       orderId: order.id,
-      customerId: order.customerId || 'guest',
+      userId: order.userId || 'guest',
       total: order.total,
       items: order.items,
       status: order.status,

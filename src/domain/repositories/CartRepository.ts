@@ -1,7 +1,7 @@
 import type { Cart } from '../Cart';
 
 export interface CartRepository {
-  findByCustomerId(customerId: string): Promise<Cart | null>;
+  findByUserId(userId: string): Promise<Cart | null>;
   save(cart: Cart): Promise<void>;
-  clear(customerId: string): Promise<void>;
+  clear(userId: string): Promise<void>;
 }

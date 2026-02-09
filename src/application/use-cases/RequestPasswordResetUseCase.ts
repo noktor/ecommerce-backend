@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import type { CustomerRepository } from '../../domain/repositories/CustomerRepository';
+import type { UserRepository } from '../../domain/repositories/UserRepository';
 import type { EmailService } from '../../domain/services/EmailService';
 
 export interface RequestPasswordResetInput {
@@ -13,38 +13,33 @@ export interface RequestPasswordResetOutput {
 
 export class RequestPasswordResetUseCase {
   constructor(
-    private customerRepository: CustomerRepository,
+    private userRepository: UserRepository,
     private emailService: EmailService,
     private frontendUrl: string
   ) {}
 
   async execute(input: RequestPasswordResetInput): Promise<RequestPasswordResetOutput> {
-    // Find customer by email
-    const customer = await this.customerRepository.findByEmail(input.email);
+    const user = await this.userRepository.findByEmail(input.email);
 
-    // Don't reveal if email exists or not (security best practice)
-    if (!customer) {
+    if (!user) {
       return {
         success: true,
         message: 'If the email exists, a password reset link has been sent.',
       };
     }
 
-    // Generate reset token
     const resetToken = randomUUID();
     const resetTokenExpiry = new Date();
-    resetTokenExpiry.setHours(resetTokenExpiry.getHours() + 1); // 1 hour expiry
+    resetTokenExpiry.setHours(resetTokenExpiry.getHours() + 1);
 
-    // Update customer with reset token
-    const updatedCustomer = customer.withResetToken(resetToken, resetTokenExpiry);
-    await this.customerRepository.save(updatedCustomer);
+    const updatedUser = user.withResetToken(resetToken, resetTokenExpiry);
+    await this.userRepository.save(updatedUser);
 
-    // Send reset email
     const resetUrl = `${this.frontendUrl}/reset-password/${resetToken}`;
     await this.emailService.sendPasswordResetEmail({
-      email: customer.email,
-      name: customer.name,
-      resetToken: resetToken,
+      email: user.email,
+      name: user.name,
+      resetToken,
       resetUrl,
     });
 

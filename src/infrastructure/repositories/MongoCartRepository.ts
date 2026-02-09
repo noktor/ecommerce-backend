@@ -4,11 +4,11 @@ import { CartModel, type ICart } from '../models/CartModel';
 
 export class MongoCartRepository implements CartRepository {
   private documentToCart(doc: ICart): Cart {
-    return new Cart(doc.id, doc.customerId, doc.items as CartItem[], doc.updatedAt, doc.expiresAt);
+    return new Cart(doc.id, doc.userId, doc.items as CartItem[], doc.updatedAt, doc.expiresAt);
   }
 
-  async findByCustomerId(customerId: string): Promise<Cart | null> {
-    const doc = await CartModel.findOne({ customerId }).exec();
+  async findByUserId(userId: string): Promise<Cart | null> {
+    const doc = await CartModel.findOne({ userId }).exec();
     return doc ? this.documentToCart(doc) : null;
   }
 
@@ -17,7 +17,7 @@ export class MongoCartRepository implements CartRepository {
       { id: cart.id },
       {
         id: cart.id,
-        customerId: cart.customerId,
+        userId: cart.userId,
         items: cart.items,
         updatedAt: cart.updatedAt,
         expiresAt: cart.expiresAt,
@@ -26,7 +26,7 @@ export class MongoCartRepository implements CartRepository {
     ).exec();
   }
 
-  async clear(customerId: string): Promise<void> {
-    await CartModel.deleteOne({ customerId }).exec();
+  async clear(userId: string): Promise<void> {
+    await CartModel.deleteOne({ userId }).exec();
   }
 }

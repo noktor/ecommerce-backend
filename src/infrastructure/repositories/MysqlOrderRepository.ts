@@ -13,8 +13,8 @@ export class MysqlOrderRepository implements OrderRepository {
     return this.orders.get(id) || null;
   }
 
-  async findByCustomerId(customerId: string): Promise<Order[]> {
-    return Array.from(this.orders.values()).filter((o) => o.customerId === customerId);
+  async findByUserId(userId: string): Promise<Order[]> {
+    return Array.from(this.orders.values()).filter((o) => o.userId === userId);
   }
 
   async updateStatus(orderId: string, status: Order['status']): Promise<void> {
@@ -25,12 +25,14 @@ export class MysqlOrderRepository implements OrderRepository {
 
     const updatedOrder = new Order(
       order.id,
-      order.customerId,
+      order.userId,
       order.items,
       order.total,
       status,
       order.createdAt,
-      order.shippingAddress
+      order.shippingAddress,
+      order.guestEmail,
+      order.guestName
     );
     this.orders.set(orderId, updatedOrder);
   }

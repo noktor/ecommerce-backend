@@ -1,4 +1,5 @@
-import type { CustomerRepository } from '../../domain/repositories/CustomerRepository';
+import type { UserRepository } from '../../domain/repositories/UserRepository';
+import { UserRole } from '../../domain/User';
 
 export interface GetCurrentUserInput {
   userId: string;
@@ -10,24 +11,26 @@ export interface GetCurrentUserOutput {
   name: string;
   emailVerified: boolean;
   status: string;
+  role: 'customer' | 'retailer';
 }
 
 export class GetCurrentUserUseCase {
-  constructor(private customerRepository: CustomerRepository) {}
+  constructor(private userRepository: UserRepository) {}
 
   async execute(input: GetCurrentUserInput): Promise<GetCurrentUserOutput> {
-    const customer = await this.customerRepository.findById(input.userId);
+    const user = await this.userRepository.findById(input.userId);
 
-    if (!customer) {
+    if (!user) {
       throw new Error('User not found');
     }
 
     return {
-      id: customer.id,
-      email: customer.email,
-      name: customer.name,
-      emailVerified: customer.emailVerified,
-      status: customer.status,
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      emailVerified: user.emailVerified,
+      status: user.status,
+      role: user.role === UserRole.RETAILER ? 'retailer' : 'customer',
     };
   }
 }

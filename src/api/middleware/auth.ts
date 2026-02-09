@@ -5,7 +5,7 @@ import { AppError } from './errorHandler';
 export interface AuthenticatedRequest extends Request {
   userId?: string;
   userEmail?: string;
-  userRole?: 'user' | 'retailer';
+  userRole?: 'customer' | 'retailer';
 }
 
 export function createAuthMiddleware(tokenService: TokenService) {
@@ -26,7 +26,7 @@ export function createAuthMiddleware(tokenService: TokenService) {
 
       req.userId = payload.userId;
       req.userEmail = payload.email;
-      req.userRole = payload.role || 'user';
+      req.userRole = payload.role || 'customer';
 
       next();
     } catch (error) {
@@ -55,7 +55,7 @@ export function createOptionalAuthMiddleware(tokenService: TokenService) {
         if (payload) {
           req.userId = payload.userId;
           req.userEmail = payload.email;
-          req.userRole = payload.role || 'user';
+          req.userRole = payload.role || 'customer';
         }
       }
 
@@ -72,9 +72,9 @@ export function createOptionalAuthMiddleware(tokenService: TokenService) {
  * Middleware factory to enforce a specific user role (e.g. 'retailer').
  * Must be used AFTER createAuthMiddleware so req.userRole is set.
  */
-export function requireRole(requiredRole: 'user' | 'retailer') {
+export function requireRole(requiredRole: 'customer' | 'retailer') {
   return (req: AuthenticatedRequest, _res: Response, next: NextFunction): void => {
-    const actualRole = req.userRole || 'user';
+    const actualRole = req.userRole || 'customer';
     if (actualRole !== requiredRole) {
       return next(new AppError(403, 'Forbidden: insufficient permissions'));
     }

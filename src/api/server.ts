@@ -35,7 +35,7 @@ export interface UseCases {
 export interface Repositories {
   cartRepository: any;
   orderRepository: any;
-  customerRepository: any;
+  userRepository: any;
   storeRepository?: any;
 }
 

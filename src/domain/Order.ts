@@ -18,7 +18,7 @@ export interface OrderItem {
 export class Order {
   constructor(
     public readonly id: string,
-    public readonly customerId: string | null, // Allow null for guest orders
+    public readonly userId: string | null, // Allow null for guest orders
     public readonly items: OrderItem[],
     public readonly total: number,
     public readonly status: OrderStatus,

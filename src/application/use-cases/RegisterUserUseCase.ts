@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
-import { Customer, CustomerRole, CustomerStatus } from '../../domain/Customer';
-import type { CustomerRepository } from '../../domain/repositories/CustomerRepository';
+import { User, UserRole, UserStatus } from '../../domain/User';
+import type { UserRepository } from '../../domain/repositories/UserRepository';
 import type { EmailService } from '../../domain/services/EmailService';
 import type { PasswordService } from '../../domain/services/PasswordService';
 
@@ -8,71 +8,65 @@ export interface RegisterUserInput {
   email: string;
   password: string;
   name: string;
-  /** Optional role; defaults to USER if not provided or invalid. */
-  role?: 'user' | 'retailer';
+  /** Optional role; defaults to customer if not provided or invalid. */
+  role?: 'customer' | 'retailer';
 }
 
 export interface RegisterUserOutput {
-  customer: Customer;
+  user: User;
   message: string;
 }
 
 export class RegisterUserUseCase {
   constructor(
-    private customerRepository: CustomerRepository,
+    private userRepository: UserRepository,
     private passwordService: PasswordService,
     private emailService: EmailService,
     private frontendUrl: string
   ) {}
 
   async execute(input: RegisterUserInput): Promise<RegisterUserOutput> {
-    // Check if email already exists
-    const existingCustomer = await this.customerRepository.findByEmail(input.email);
-    if (existingCustomer) {
+    const existingUser = await this.userRepository.findByEmail(input.email);
+    if (existingUser) {
       throw new Error('Email already registered');
     }
 
-    // Hash password
     const passwordHash = await this.passwordService.hashPassword(input.password);
 
-    // Generate verification token
     const verificationToken = randomUUID();
     const verificationTokenExpiry = new Date();
-    verificationTokenExpiry.setHours(verificationTokenExpiry.getHours() + 24); // 24 hours expiry
+    verificationTokenExpiry.setHours(verificationTokenExpiry.getHours() + 24);
 
-    // Create customer
-    const customer = new Customer(
+    const user = new User(
       randomUUID(),
       input.email,
       input.name,
-      CustomerStatus.ACTIVE,
+      UserStatus.ACTIVE,
       new Date(),
       passwordHash,
-      [], // passwordHistory - empty for new users
-      false, // email not verified yet
+      [],
+      false,
       verificationToken,
       verificationTokenExpiry,
       undefined,
       undefined,
-      input.role === 'retailer' ? CustomerRole.RETAILER : CustomerRole.USER
+      input.role === 'retailer' ? UserRole.RETAILER : UserRole.CUSTOMER
     );
 
-    // Save customer
-    const savedCustomer = await this.customerRepository.save(customer);
+    const savedUser = await this.userRepository.save(user);
 
-    // Send verification email
     const verificationUrl = `${this.frontendUrl}/verify-email/${verificationToken}`;
     console.log(`📧 Generating verification email with URL: ${verificationUrl}`);
     console.log(`   Frontend URL from config: ${this.frontendUrl}`);
     await this.emailService.sendVerificationEmail({
-      email: savedCustomer.email,
-      name: savedCustomer.name,
-      verificationToken: savedCustomer.verificationToken!,
+      email: savedUser.email,
+      name: savedUser.name,
+      verificationToken: savedUser.verificationToken!,
       verificationUrl,
     });
 
     return {
-      customer: savedCustomer,
+      user: savedUser,
       message: 'Registration successful. Please check your email to verify your account.',
     };
   }
