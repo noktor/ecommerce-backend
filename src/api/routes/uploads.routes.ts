@@ -60,7 +60,10 @@ export function createUploadsRouter(tokenService: TokenService): Router {
         const maxLength =
           Number(process.env.UPLOAD_IMAGE_DATAURL_MAX_LENGTH) || 3_000_000;
         if (imageDataUrl.length > maxLength) {
-          throw new AppError(413, 'Uploaded image is too large');
+          throw new AppError(
+            413,
+            'Image is too large. Please use an image under 2 MB (e.g. a smaller file or lower resolution).'
+          );
         }
 
         const cloudinary = getCloudinaryService();
@@ -80,7 +83,19 @@ export function createUploadsRouter(tokenService: TokenService): Router {
           return next(error);
         }
         console.error('❌ Cloudinary upload error:', error);
-        next(new AppError(500, 'Failed to upload image'));
+        // Surface a user-friendly message for known Cloudinary/network issues
+        const message =
+          error instanceof Error ? error.message : '';
+        const isSizeOrLimit =
+          /too large|limit|size|413/i.test(message) || (error as { statusCode?: number }).statusCode === 413;
+        next(
+          new AppError(
+            isSizeOrLimit ? 413 : 500,
+            isSizeOrLimit
+              ? 'Image is too large. Please use an image under 2 MB (e.g. a smaller file or lower resolution).'
+              : 'Failed to upload image. Please try again or use a different image.'
+          )
+        );
       }
     }
   );
